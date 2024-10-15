@@ -10,7 +10,7 @@ require('dotenv').config();  // .env 파일 로드
 // Express App 생성
 const app = express();
 app.use(bodyParser.json());
-app.use(cors());  // CORS 허용
+app.use(cors({ origin: 'https://yogibo.kr' }));
 
 // MongoDB 연결 설정
 const mongoClient = new MongoClient(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
