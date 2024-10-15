@@ -1,5 +1,5 @@
 const express = require('express');
-const mongoose = require('mongoose');
+const { MongoClient } = require('mongodb');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const multer = require('multer');
@@ -12,21 +12,17 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors());  // CORS 허용
 
-// MongoDB 연결 (환경 변수로 URI 설정)
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log('MongoDB 연결 성공'))
+// MongoDB 연결 설정
+const mongoClient = new MongoClient(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+let db;
+
+// MongoDB 연결
+mongoClient.connect()
+    .then(client => {
+        db = client.db('yourDatabaseName');  // 사용할 DB 선택
+        console.log('MongoDB 연결 성공');
+    })
     .catch(err => console.error('MongoDB 연결 실패:', err));
-
-// Mongoose Schema 및 모델 정의
-const productSchema = new mongoose.Schema({
-    product_name: String,
-    price: String,
-    product_no: String,
-    position: { x: Number, y: Number },
-    imagePath: String // FTP 서버에 저장된 이미지 경로
-});
-
-const Product = mongoose.model('Product', productSchema);
 
 // Multer 설정 (이미지 업로드를 위한 미들웨어)
 const storage = multer.memoryStorage(); // 메모리에 파일 저장
@@ -60,15 +56,15 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
 
                 // FTP 서버에서 이미지 파일 경로를 MongoDB에 저장
                 for (let product of products) {
-                    const newProduct = new Product({
+                    const newProduct = {
                         product_name: product.product_name,
                         price: product.price,
                         product_no: product.product_no,
                         position: product.position,
                         imagePath: `/${remotePath}`  // 이미지 경로 저장
-                    });
-                    const savedProduct = await newProduct.save();
-                    savedProducts.push(savedProduct);
+                    };
+                    const result = await db.collection('products').insertOne(newProduct);
+                    savedProducts.push(result.ops[0]);  // MongoDB는 삽입된 문서를 반환
                 }
 
                 ftpClient.end();
@@ -84,7 +80,7 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
 // 저장된 상품 목록 불러오기 API
 app.get('/get-products', async (req, res) => {
     try {
-        const products = await Product.find();
+        const products = await db.collection('products').find().toArray();
         res.json({ success: true, products });
     } catch (err) {
         console.error('상품 불러오기 오류:', err);
