@@ -19,7 +19,7 @@ let db;
 // MongoDB 연결
 mongoClient.connect()
     .then(client => {
-        db = client.db('yourDatabaseName');  // 사용할 DB 선택
+        db = client.db('yogibo');  // 사용할 DB 선택
         console.log('MongoDB 연결 성공');
     })
     .catch(err => console.error('MongoDB 연결 실패:', err));
