@@ -63,7 +63,7 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
                         position: product.position,
                         imagePath: `${remotePath}`
                     };
-                    const result = await db.collection('sns').insertOne(newProduct);
+                    const result = await db.collection('products').insertOne(newProduct);
                     savedProducts.push(result.ops[0]);  // MongoDB에 삽입된 데이터를 반환
                 }
 
@@ -80,7 +80,7 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
 // 저장된 상품 목록 불러오기 API
 app.get('/get-products', async (req, res) => {
     try {
-        const products = await db.collection('sns').find().toArray();
+        const products = await db.collection('products').find().toArray();
         res.json({ success: true, products });
     } catch (err) {
         console.error('상품 불러오기 오류:', err);
