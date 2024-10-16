@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const multer = require('multer');
 const ftp = require('ftp');
+require('dotenv').config();
 
 // Express App 생성
 const app = express();
@@ -12,9 +13,9 @@ app.use(cors({ origin: '*' }));
 
 
 // MongoDB 연결 설정 (직접 URI 입력)
-const mongoClient = new MongoClient('mongodb+srv://admin:admin@cluster0.unz3ui3.mongodb.net/forum?retryWrites=true&w=majority', { 
-    useNewUrlParser: true, 
-    useUnifiedTopology: true 
+const mongoClient = new MongoClient(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
 });
 let db;
 
@@ -33,9 +34,9 @@ const upload = multer({ storage: storage });
 // FTP 서버 설정 (직접 FTP 설정 입력)
 const ftpClient = new ftp();
 const ftpConfig = {
-    host: 'yogibo.ftp.cafe24.com',  // FTP 호스트
-    user: 'yogibo',  // FTP 사용자명
-    password: 'korea2024@@'  // FTP 비밀번호
+    host: process.env.FTP_HOST,  // FTP 호스트
+    user: process.env.FTP_USER,  // FTP 사용자명
+    password: process.env.FTP_PASSWORD  // FTP 비밀번호
 };
 // 상품 저장 API (이미지 포함)
 app.post('/save-product', upload.single('image'), async (req, res) => {
@@ -56,7 +57,7 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
 
                 // MongoDB에 저장할 데이터 준비
                 const newDocument = {
-                    imagePath: `/${remotePath}`, // 이미지 경로
+                    imagePath: `${remotePath}`, // 이미지 경로
                     products, // 제품 배열 (여러 제품 포함)
                 };
 
