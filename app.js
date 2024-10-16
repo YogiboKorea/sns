@@ -10,7 +10,6 @@ const path = require('path');
 const app = express();
 app.use(bodyParser.json());
 app.use(cors());
-app.use(express.json());
 
 // MongoDB 연결 설정 (직접 URI 입력)
 const mongoClient = new MongoClient('mongodb+srv://admin:admin@cluster0.unz3ui3.mongodb.net/forum?retryWrites=true&w=majority', { 
@@ -64,7 +63,7 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
                         price: product.price,
                         product_no: product.product_no,
                         position: product.position,
-                        imagePath: `${remotePath}`  // 이미지 경로 저장
+                        imagePath: `/${remotePath}`  // 이미지 경로 저장
                     };
                     const result = await db.collection('products').insertOne(newProduct);
                     savedProducts.push(result.ops[0]);  // MongoDB에 삽입된 데이터를 반환
@@ -91,6 +90,7 @@ app.get('/get-products', async (req, res) => {
         res.status(500).json({ success: false, message: '상품 불러오기 오류' });
     }
 });
+
 // 서버 실행
 app.listen(4000, () => {
     console.log('서버가 4000번 포트에서 실행 중...');
