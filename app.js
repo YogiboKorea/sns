@@ -80,7 +80,7 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
                     // MongoDB에 문서 저장
                     const result = await db.collection('products').insertOne(newDocument);
 
-                    res.json({ success: true, document: result.ops[0] }); // 성공 응답
+                    res.json({ success: true, documentId: result.insertedId }); // 성공 응답, 삽입된 문서의 ID 반환
                 }
 
                 ftpClient.end(); // FTP 연결 종료
