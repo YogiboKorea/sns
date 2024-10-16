@@ -41,7 +41,7 @@ const ftpConfig = {
 // 상품 저장 API (이미지 포함)
 app.post('/save-product', upload.single('image'), async (req, res) => {
     try {
-        const products = JSON.parse(req.body.products);  // products 데이터를 JSON 문자열에서 객체로 변환
+        const { products } = req.body;
         const imageFile = req.file;  // 업로드된 이미지 파일
         const savedProducts = [];
 
@@ -66,7 +66,12 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
                         imagePath: `/${remotePath}`  // 이미지 경로 저장
                     };
                     const result = await db.collection('products').insertOne(newProduct);
-                    savedProducts.push(result.ops[0]);  // MongoDB에 삽입된 데이터를 반환
+                    
+                    // MongoDB 최신 버전에서는 result.insertedId를 사용
+                    savedProducts.push({
+                        ...newProduct,
+                        _id: result.insertedId
+                    });
                 }
 
                 ftpClient.end();
