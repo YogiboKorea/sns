@@ -37,8 +37,8 @@ const upload = multer({ storage: storage });
 const ftpClient = new ftp();
 const ftpConfig = {
     host: 'yogibo.ftp.cafe24.com',  // FTP 호스트
-    user: 'yogibo',  // FTP 사용자명
-    password: 'korea2024@@'  // FTP 비밀번호
+    user: 'your_ftp_user',  // FTP 사용자명
+    password: 'your_ftp_password'  // FTP 비밀번호
 };
 
 // 상품 저장 API (이미지 포함)
@@ -60,7 +60,7 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
 
                 // MongoDB에 하나의 이미지와 여러 상품 정보를 저장
                 const newProductData = {
-                    imagePath: `/${remotePath}`,  // 이미지 경로
+                    imagePath: `${remotePath}`,  // 이미지 경로
                     products: products.map(product => ({
                         product_name: product.product_name,
                         price: product.price,
