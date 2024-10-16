@@ -9,41 +9,44 @@ const path = require('path');
 // Express App 생성
 const app = express();
 app.use(bodyParser.json());
-app.use(cors({ origin: '*' }));
+app.use(cors({ origin: '*' }));  // 모든 출처 허용, 필요에 따라 특정 도메인으로 제한 가능
 
-// MongoDB 연결 설정 (직접 URI 입력)
-const mongoClient = new MongoClient('mongodb+srv://admin:admin@cluster0.unz3ui3.mongodb.net/forum?retryWrites=true&w=majority', { 
-    useNewUrlParser: true, 
-    useUnifiedTopology: true 
-});
+// MongoDB 연결 설정 (직접 환경 변수를 사용하지 않고 URI와 DB 이름을 하드코딩)
+const mongoURI = 'mongodb+srv://<username>:<password>@cluster0.mongodb.net/yogibo?retryWrites=true&w=majority';  // MongoDB URI
+const dbName = 'yogibo';  // 사용할 데이터베이스 이름
+
+const mongoClient = new MongoClient(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true });
 let db;
 
 // MongoDB 연결
 mongoClient.connect()
     .then(client => {
-        db = client.db('yogibo');  // 사용할 DB 선택
+        db = client.db(dbName);
         console.log('MongoDB 연결 성공');
     })
     .catch(err => console.error('MongoDB 연결 실패:', err));
 
 // Multer 설정 (이미지 업로드를 위한 미들웨어)
-const storage = multer.memoryStorage();  // 메모리에 파일 저장
+const storage = multer.memoryStorage(); // 메모리에 파일 저장
 const upload = multer({ storage: storage });
 
-// FTP 서버 설정 (직접 FTP 설정 입력)
+// FTP 서버 설정 (환경 변수를 사용하지 않고 하드코딩)
 const ftpClient = new ftp();
 const ftpConfig = {
     host: 'yogibo.ftp.cafe24.com',  // FTP 호스트
     user: 'yogibo',  // FTP 사용자명
     password: 'korea2024@@'  // FTP 비밀번호
 };
-
 // 상품 저장 API (이미지 포함)
 app.post('/save-product', upload.single('image'), async (req, res) => {
     try {
-        const products = JSON.parse(req.body.products);  // products 데이터를 JSON 문자열에서 객체로 변환
+        const { products } = req.body;
         const imageFile = req.file;  // 업로드된 이미지 파일
         const savedProducts = [];
+
+        if (!imageFile || !products) {
+            return res.status(400).json({ success: false, message: '이미지 파일이나 상품 데이터가 누락되었습니다.' });
+        }
 
         // FTP 서버에 이미지 업로드
         ftpClient.connect(ftpConfig);
@@ -56,14 +59,14 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
                     return;
                 }
 
-                // FTP 서버에서 이미지 파일 경로를 MongoDB에 저장
-                for (let product of products) {
+                // 이미지 경로를 포함한 상품 데이터를 MongoDB에 저장
+                for (let product of JSON.parse(products)) {
                     const newProduct = {
                         product_name: product.product_name,
                         price: product.price,
                         product_no: product.product_no,
                         position: product.position,
-                        imagePath: `/${remotePath}`  // 이미지 경로 저장
+                        imagePath: `https://ftp.example.com${remotePath}`  // 이미지 경로 저장
                     };
                     const result = await db.collection('products').insertOne(newProduct);
                     savedProducts.push(result.ops[0]);  // MongoDB에 삽입된 데이터를 반환
@@ -79,7 +82,6 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
     }
 });
 
-
 // 저장된 상품 목록 불러오기 API
 app.get('/get-products', async (req, res) => {
     try {
@@ -90,7 +92,8 @@ app.get('/get-products', async (req, res) => {
         res.status(500).json({ success: false, message: '상품 불러오기 오류' });
     }
 });
-// 서버 실행
+
+// 서버 실행 (포트 4000)
 app.listen(4000, () => {
     console.log('서버가 4000번 포트에서 실행 중...');
 });
