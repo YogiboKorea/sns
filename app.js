@@ -93,13 +93,17 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
 app.get('/get-products', async (req, res) => {
     try {
         const products = await db.collection('products').find().toArray();
+        
+        if (products.length === 0) {
+            return res.json({ success: false, message: '저장된 상품이 없습니다.' });
+        }
+
         res.json({ success: true, products });
     } catch (err) {
         console.error('상품 불러오기 오류:', err);
         res.status(500).json({ success: false, message: '상품 불러오기 오류' });
     }
 });
-
 // 서버 실행
 app.listen(4000, () => {
     console.log('서버가 4000번 포트에서 실행 중...');
