@@ -43,39 +43,43 @@ const ftpConfig = {
 app.post('/save-product', upload.single('image'), async (req, res) => {
     try {
         const products = JSON.parse(req.body.products);  // products 데이터를 JSON 문자열에서 객체로 변환
-        const imageFile = req.file;
+        const imageFile = req.file;  // 업로드된 이미지 파일
         const savedProducts = [];
 
+        // FTP 서버에 이미지 업로드
         ftpClient.connect(ftpConfig);
         ftpClient.on('ready', () => {
             const remotePath = `/web/img/sns/${Date.now()}_${imageFile.originalname}`;
             ftpClient.put(imageFile.buffer, remotePath, async (err) => {
                 if (err) {
                     console.error('FTP 업로드 오류:', err);
-                    return res.status(500).json({ success: false, message: 'FTP 업로드 오류' });
+                    res.status(500).json({ success: false, message: 'FTP 업로드 오류' });
+                    return;
                 }
 
+                // FTP 서버에서 이미지 파일 경로를 MongoDB에 저장
                 for (let product of products) {
                     const newProduct = {
                         product_name: product.product_name,
                         price: product.price,
                         product_no: product.product_no,
                         position: product.position,
-                        imagePath: `${remotePath}`
+                        imagePath: `${remotePath}`  // 이미지 경로 저장
                     };
                     const result = await db.collection('products').insertOne(newProduct);
                     savedProducts.push(result.ops[0]);  // MongoDB에 삽입된 데이터를 반환
                 }
 
                 ftpClient.end();
-                return res.json({ success: true, products: savedProducts });  // 클라이언트에 성공 응답
+                res.json({ success: true, products: savedProducts });
             });
         });
     } catch (err) {
         console.error('상품 저장 오류:', err);
-        return res.status(500).json({ success: false, message: '상품 저장 오류' });
+        res.status(500).json({ success: false, message: '상품 저장 오류' });
     }
 });
+
 
 // 저장된 상품 목록 불러오기 API
 app.get('/get-products', async (req, res) => {
@@ -87,7 +91,6 @@ app.get('/get-products', async (req, res) => {
         res.status(500).json({ success: false, message: '상품 불러오기 오류' });
     }
 });
-
 // 서버 실행
 app.listen(4000, () => {
     console.log('서버가 4000번 포트에서 실행 중...');
