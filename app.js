@@ -39,7 +39,6 @@ const ftpConfig = {
 };
 // 상품 저장 API (이미지 포함)
 
-코드 복사
 app.post('/save-product', upload.single('image'), async (req, res) => {
     try {
         const products = JSON.parse(req.body.products);  // JSON으로 변환
@@ -79,7 +78,7 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
             });
         });
     } catch (err) {
-        console.error('상품 저장 오류:', err);
+        console.error('상품 저장 오류ss:', err);
         res.status(500).json({ success: false, message: '상품 저장 오류' });
     }
 });
