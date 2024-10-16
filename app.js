@@ -64,7 +64,7 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
                         price: product.price,
                         product_no: product.product_no,
                         position: product.position,
-                        imagePath: `/${remotePath}`  // 이미지 경로 저장
+                        imagePath: `${remotePath}`  // 이미지 경로 12저장
                     };
                     const result = await db.collection('products').insertOne(newProduct);
 
