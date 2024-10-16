@@ -1,5 +1,5 @@
 const express = require('express');
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const multer = require('multer');
@@ -12,7 +12,7 @@ app.use(bodyParser.json());
 app.use(cors({ origin: 'https://yogibo.kr' }));  // CORS 설정
 
 // MongoDB 연결 설정 (직접 URI 입력)
-const mongoClient = new MongoClient('mongodb+srv://admin:admin@cluster0.unz3ui3.mongodb.net/forum?retryWrites=true&w=majority', { 
+const mongoClient = new MongoClient('mongodb+srv://yourUsername:yourPassword@yourMongoCluster.mongodb.net/yogibo', { 
     useNewUrlParser: true, 
     useUnifiedTopology: true 
 });
@@ -41,9 +41,14 @@ const ftpConfig = {
 // 상품 저장 API (이미지 포함)
 app.post('/save-product', upload.single('image'), async (req, res) => {
     try {
-        const { products } = req.body;
+        // products 데이터 파싱
+        const products = JSON.parse(req.body.products);
         const imageFile = req.file;  // 업로드된 이미지 파일
         const savedProducts = [];
+
+        if (!imageFile) {
+            return res.status(400).json({ success: false, message: '이미지 파일이 없습니다.' });
+        }
 
         // FTP 서버에 이미지 업로드
         ftpClient.connect(ftpConfig);
@@ -63,20 +68,24 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
                         price: product.price,
                         product_no: product.product_no,
                         position: product.position,
-                        imagePath: `/${remotePath}`  // 이미지 경로 저장
+                        imagePath: `https://yogibo.ftp.cafe24.com${remotePath}`  // 이미지 경로 저장
                     };
                     const result = await db.collection('products').insertOne(newProduct);
                     
-                    // MongoDB 최신 버전에서는 result.insertedId를 사용
-                    savedProducts.push({
-                        ...newProduct,
-                        _id: result.insertedId
-                    });
+                    // 삽입된 문서 조회
+                    const insertedProduct = await db.collection('products').findOne({ _id: result.insertedId });
+                    savedProducts.push(insertedProduct);
                 }
 
                 ftpClient.end();
                 res.json({ success: true, products: savedProducts });
             });
+        });
+
+        // FTP 연결 에러 핸들링
+        ftpClient.on('error', (err) => {
+            console.error('FTP 연결 오류:', err);
+            res.status(500).json({ success: false, message: 'FTP 연결 오류' });
         });
     } catch (err) {
         console.error('상품 저장 오류:', err);
