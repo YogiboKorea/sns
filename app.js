@@ -58,7 +58,7 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
 
                 // MongoDB에 하나의 이미지와 여러 상품 정보를 저장
                 const newProductData = {
-                    imagePath: `/${remotePath}`,  // 이미지 경로
+                    imagePath: `${remotePath}`,  // 이미지 경로
                     products: products.map(product => ({
                         product_name: product.product_name,
                         price: product.price,
