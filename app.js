@@ -8,10 +8,7 @@ const ftp = require('ftp');
 // Express App 생성
 const app = express();
 app.use(bodyParser.json());
-app.use(cors({
-    origin: 'https://yogibo.kr', // 허용된 출처를 추가합니다.
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-}));
+app.use(cors({ origin: '*' })); 
 
 // MongoDB 연결 설정 (직접 URI 입력)
 const mongoClient = new MongoClient('mongodb+srv://admin:admin@cluster0.unz3ui3.mongodb.net/forum?retryWrites=true&w=majority', { 
