@@ -4,7 +4,6 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const multer = require('multer');
 const ftp = require('ftp');
-const path = require('path');
 
 // Express App 생성
 const app = express();
@@ -40,12 +39,12 @@ const ftpConfig = {
     user: 'yogibo',  // FTP 사용자명
     password: 'korea2024@@'  // FTP 비밀번호
 };
-
 // 상품 저장 API (이미지 포함)
 app.post('/save-product', upload.single('image'), async (req, res) => {
     try {
         const products = JSON.parse(req.body.products);  // products 데이터를 JSON 문자열에서 객체로 변환
         const imageFile = req.file;  // 업로드된 이미지 파일
+        const savedProducts = [];
 
         // FTP 서버에 이미지 업로드
         ftpClient.connect(ftpConfig);
@@ -58,20 +57,30 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
                     return;
                 }
 
-                // MongoDB에 하나의 이미지와 여러 상품 정보를 저장
-                const newProductData = {
-                    imagePath: `${remotePath}`,  // 이미지 경로
-                    products: products.map(product => ({
+                // FTP 서버에서 이미지 파일 경로를 MongoDB에 저장
+                for (let product of products) {
+                    const newProduct = {
                         product_name: product.product_name,
                         price: product.price,
                         product_no: product.product_no,
-                        position: product.position,  // 상품 위치
-                    }))
-                };
+                        position: product.position,
+                        imagePath: `/${remotePath}`  // 이미지 경로 저장
+                    };
+                    const result = await db.collection('products').insertOne(newProduct);
 
-                // MongoDB에 저장
-                const result = await db.collection('products').insertOne(newProductData);
-                res.json({ success: true, products: result.ops[0] });
+                    // 최신 MongoDB 반환 값 사용
+                    if (result.insertedId) {
+                        savedProducts.push({
+                            _id: result.insertedId,
+                            ...newProduct
+                        });
+                    } else {
+                        console.error('상품 저장 오류: MongoDB에 삽입된 데이터가 없습니다.');
+                    }
+                }
+
+                ftpClient.end();
+                res.json({ success: true, products: savedProducts });
             });
         });
     } catch (err) {
