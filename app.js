@@ -63,7 +63,7 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
                         price: product.price,
                         product_no: product.product_no,
                         position: product.position,
-                        imagePath: `/${remotePath}`  // 이미지 경로 저장
+                        imagePath: `${remotePath}`  // 이미지 경로 저장
                     };
                     const result = await db.collection('products').insertOne(newProduct);
                     savedProducts.push(result.ops[0]);  // MongoDB에 삽입된 데이터를 반환
