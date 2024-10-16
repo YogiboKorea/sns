@@ -49,7 +49,7 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
         // FTP 서버에 이미지 업로드
         ftpClient.connect(ftpConfig);
         ftpClient.on('ready', () => {
-            const remotePath = `/web/img/sns/${Date.now()}_${imageFile.originalname}`;
+            const remotePath = `web/img/sns/${Date.now()}_${imageFile.originalname}`;
             ftpClient.put(imageFile.buffer, remotePath, async (err) => {
                 if (err) {
                     console.error('FTP 업로드 오류:', err);
