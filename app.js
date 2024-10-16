@@ -38,12 +38,15 @@ const ftpConfig = {
     password: 'korea2024@@'  // FTP 비밀번호
 };
 // 상품 저장 API (이미지 포함)
-
 app.post('/save-product', upload.single('image'), async (req, res) => {
     try {
-        const products = JSON.parse(req.body.products);  // JSON으로 변환
+        const { products } = req.body;
         const imageFile = req.file;  // 업로드된 이미지 파일
         const savedProducts = [];
+
+        if (!imageFile || !products) {
+            return res.status(400).json({ success: false, message: '이미지 파일이나 상품 데이터가 누락되었습니다.' });
+        }
 
         // FTP 서버에 이미지 업로드
         ftpClient.connect(ftpConfig);
@@ -56,32 +59,29 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
                     return;
                 }
 
-                // MongoDB에 상품 데이터 저장
-                try {
-                    for (let product of products) {
-                        const newProduct = {
-                            product_name: product.product_name,
-                            price: product.price,
-                            product_no: product.product_no,
-                            position: product.position,
-                            imagePath: `/${remotePath}`  // 이미지 경로 저장
-                        };
-                        const result = await db.collection('products').insertOne(newProduct);
-                        savedProducts.push(result.ops[0]);  // MongoDB는 삽입된 문서를 반환
-                    }
-                    ftpClient.end();
-                    res.json({ success: true, products: savedProducts });
-                } catch (dbError) {
-                    console.error('MongoDB 저장 오류:', dbError);
-                    res.status(500).json({ success: false, message: 'MongoDB 저장 오류' });
+                // 이미지 경로를 포함한 상품 데이터를 MongoDB에 저장
+                for (let product of JSON.parse(products)) {
+                    const newProduct = {
+                        product_name: product.product_name,
+                        price: product.price,
+                        product_no: product.product_no,
+                        position: product.position,
+                        imagePath: `https://ftp.example.com${remotePath}`  // 이미지 경로 저장
+                    };
+                    const result = await db.collection('products').insertOne(newProduct);
+                    savedProducts.push(result.ops[0]);  // MongoDB에 삽입된 데이터를 반환
                 }
+
+                ftpClient.end();
+                res.json({ success: true, products: savedProducts });
             });
         });
     } catch (err) {
-        console.error('상품 저장 오류ss:', err);
+        console.error('상품 저장 오류:', err);
         res.status(500).json({ success: false, message: '상품 저장 오류' });
     }
 });
+
 // 저장된 상품 목록 불러오기 API
 app.get('/get-products', async (req, res) => {
     try {
