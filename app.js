@@ -9,7 +9,7 @@ const path = require('path');
 // Express App 생성
 const app = express();
 app.use(bodyParser.json());
-app.use(cors({ origin: 'https://yogibo.kr' }));  // CORS 설정
+app.use(cors({ origin: '*' }));
 
 // MongoDB 연결 설정 (직접 URI 입력)
 const mongoClient = new MongoClient('mongodb+srv://admin:admin@cluster0.unz3ui3.mongodb.net/forum?retryWrites=true&w=majority', { 
@@ -90,7 +90,6 @@ app.get('/get-products', async (req, res) => {
         res.status(500).json({ success: false, message: '상품 불러오기 오류' });
     }
 });
-
 // 서버 실행
 app.listen(4000, () => {
     console.log('서버가 4000번 포트에서 실행 중...');
