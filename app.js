@@ -10,6 +10,7 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors({ origin: '*' })); 
 
+
 // MongoDB 연결 설정 (직접 URI 입력)
 const mongoClient = new MongoClient('mongodb+srv://admin:admin@cluster0.unz3ui3.mongodb.net/forum?retryWrites=true&w=majority', { 
     useNewUrlParser: true, 
@@ -83,10 +84,6 @@ app.get('/get-products', async (req, res) => {
     }
 });
 
-// 서버 실행
-app.listen(4000, () => {
-    console.log('서버가 4000번 포트에서 실행 중...');
-});
 // 서버 실행
 app.listen(4000, () => {
     console.log('서버가 4000번 포트에서 실행 중...');
