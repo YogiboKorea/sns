@@ -6,10 +6,16 @@ const multer = require('multer');
 const ftp = require('ftp');
 require('dotenv').config();
 
+
+
 // Express App 생성
 const app = express();
 app.use(bodyParser.json());
-app.use(cors({ origin: '*' })); 
+app.use(cors({
+    origin: '*', // '*' 대신 특정 출처를 지정하는 것이 좋습니다.
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true // 쿠키 등을 포함한 인증 관련 요청 허용
+}));
 
 
 // MongoDB 연결 설정 (직접 URI 입력)
