@@ -43,38 +43,37 @@ const ftpConfig = {
 app.post('/save-product', upload.single('image'), async (req, res) => {
     try {
         const products = JSON.parse(req.body.products);  // products 데이터를 JSON 문자열에서 객체로 변환
-        const imageFile = req.file;  // 업로드된 이미지 파일
+        const imageFile = req.file;
+        const savedProducts = [];
 
-        // FTP 서버에 이미지 업로드
         ftpClient.connect(ftpConfig);
         ftpClient.on('ready', () => {
             const remotePath = `/web/img/sns/${Date.now()}_${imageFile.originalname}`;
             ftpClient.put(imageFile.buffer, remotePath, async (err) => {
                 if (err) {
                     console.error('FTP 업로드 오류:', err);
-                    res.status(500).json({ success: false, message: 'FTP 업로드 오류' });
-                    return;
+                    return res.status(500).json({ success: false, message: 'FTP 업로드 오류' });
                 }
 
-                // MongoDB에 하나의 이미지와 여러 상품 정보를 저장
-                const newProductData = {
-                    imagePath: `${remotePath}`,  // 이미지 경로
-                    products: products.map(product => ({
+                for (let product of products) {
+                    const newProduct = {
                         product_name: product.product_name,
                         price: product.price,
                         product_no: product.product_no,
-                        position: product.position,  // 상품 위치
-                    }))
-                };
+                        position: product.position,
+                        imagePath: `${remotePath}`
+                    };
+                    const result = await db.collection('sns').insertOne(newProduct);
+                    savedProducts.push(result.ops[0]);  // MongoDB에 삽입된 데이터를 반환
+                }
 
-                // MongoDB에 저장
-                const result = await db.collection('products').insertOne(newProductData);
-                res.json({ success: true, products: result.ops[0] });
+                ftpClient.end();
+                return res.json({ success: true, products: savedProducts });  // 클라이언트에 성공 응답
             });
         });
     } catch (err) {
         console.error('상품 저장 오류:', err);
-        res.status(500).json({ success: false, message: '상품 저장 오류' });
+        return res.status(500).json({ success: false, message: '상품 저장 오류' });
     }
 });
 
