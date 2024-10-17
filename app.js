@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const multer = require('multer');
 const ftp = require('ftp');
+const crypto = require('crypto'); // 랜덤 문자열 생성을 위해 crypto 모듈 추가
 require('dotenv').config();
 
 // Express App 생성
@@ -66,10 +67,14 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
     try {
         const products = JSON.parse(req.body.products); // products 배열 데이터 파싱
         const imageFile = req.file; // 업로드된 이미지 파일
-        const remotePath = `/web/img/sns/${Date.now()}_${imageFile.originalname}`;
+        
+        // 랜덤 파일명을 생성 (타임스탬프 + 랜덤 해시)
+        const randomString = crypto.randomBytes(16).toString('hex');
+        const fileExtension = imageFile.originalname.split('.').pop();  // 파일 확장자 추출
+        const remotePath = `/web/img/sns/${Date.now()}_${randomString}.${fileExtension}`;  // 새로운 파일명
 
         // 기존 문서에서 같은 이미지가 있는지 확인 (이미지 경로로 체크)
-        const existingDocument = await db.collection('products').findOne({ imagePath: { $regex: imageFile.originalname } });
+        const existingDocument = await db.collection('products').findOne({ imagePath: { $regex: randomString } });
 
         // FTP 서버에 이미지 업로드
         try {
