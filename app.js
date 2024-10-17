@@ -105,7 +105,7 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
 
 // 저장된 상품 목록 불러오기 API
 app.get('/get-products', async (req, res) => {
-    const { limit = 4, skip = 0 } = req.query;  // 페이지네이션을 위한 limit과 skip 값 설정
+    const { limit = 300, skip = 0 } = req.query;  // 페이지네이션을 위한 limit과 skip 값 설정
     try {
         const products = await db.collection('products')
             .find()
