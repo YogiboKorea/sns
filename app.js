@@ -110,14 +110,11 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
 
 // 저장된 상품 목록 불러오기 API
 app.get('/get-products', async (req, res) => {
-    const { limit = 300, skip = 0 } = req.query;  // 페이지네이션을 위한 limit과 skip 값 설정
     try {
         const products = await db.collection('products')
             .find()
             .sort({ _id: -1 })  // 최근 순으로 정렬
-            .skip(parseInt(skip))  // 건너뛸 항목 수
-            .limit(parseInt(limit))  // 가져올 항목 수 제한
-            .toArray();
+            .toArray();         // 모든 데이터를 한 번에 가져오기
         res.json({ success: true, products });
     } catch (err) {
         console.error('상품 불러오기 오류:', err);
