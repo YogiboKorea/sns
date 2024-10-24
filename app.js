@@ -62,6 +62,7 @@ const uploadToFTP = (fileBuffer, remotePath) => {
     });
 };
 
+
 // 상품 저장 API (이미지 포함)
 app.post('/save-product', upload.single('image'), async (req, res) => {
     try {
@@ -122,6 +123,24 @@ app.get('/get-products', async (req, res) => {
     } catch (err) {
         console.error('상품 불러오기 오류:', err);
         res.status(500).json({ success: false, message: '상품 불러오기 오류' });
+    }
+});
+//편집 삭제 처리하기
+app.delete('/delete-product/:id', async (req, res) => {
+    const productId = req.params.id;
+
+    try {
+        // MongoDB에서 해당 상품을 삭제
+        const result = await db.collection('products').deleteOne({ _id: new MongoClient.ObjectId(productId) });
+
+        if (result.deletedCount === 1) {
+            res.json({ success: true });
+        } else {
+            res.json({ success: false, message: '실패' });
+        }
+    } catch (err) {
+        console.error('상품 삭제 오류:', err);
+        res.status(500).json({ success: false, message: '상품 삭제 오류' });
     }
 });
 
