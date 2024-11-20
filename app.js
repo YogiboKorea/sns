@@ -1,5 +1,5 @@
 const express = require('express');
-const { MongoClient, ObjectId } = require('mongodb'); // ObjectId를 MongoClient에서 가져옴
+const { MongoClient, ObjectId } = require('mongodb');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const multer = require('multer');
@@ -37,34 +37,30 @@ const ftpConfig = {
     password: process.env.FTP_PASSWORD,
 };
 
+// FTP 업로드 함수
 const uploadToFTP = (fileBuffer, remotePath) => {
     return new Promise((resolve, reject) => {
-        console.log('FTP 서버 연결 중...');
         ftpClient.connect(ftpConfig);
         ftpClient.on('ready', () => {
-            console.log('FTP 연결 성공');
             ftpClient.put(fileBuffer, remotePath, (err) => {
                 if (err) {
-                    console.error('FTP 업로드 오류:', err);
                     reject('FTP 업로드 오류: ' + err);
                 } else {
-                    console.log('FTP 업로드 성공:', remotePath);
                     resolve('FTP 업로드 성공');
                 }
                 ftpClient.end();
             });
         });
         ftpClient.on('error', (err) => {
-            console.error('FTP 연결 오류:', err);
             reject('FTP 연결 오류: ' + err);
         });
     });
 };
 
-// 큰 화면 이미지 저장
+// 큰 화면 이미지 저장 API
 app.post('/save-big-image', upload.single('image'), async (req, res) => {
     try {
-        const products = JSON.parse(req.body.products || '[]'); // 상품 정보가 없으면 빈 배열로 처리
+        const products = JSON.parse(req.body.products || '[]'); // 상품 정보가 없으면 빈 배열
         const imageFile = req.file;
 
         if (!imageFile) {
@@ -75,27 +71,19 @@ app.post('/save-big-image', upload.single('image'), async (req, res) => {
         const fileExtension = imageFile.originalname.split('.').pop();
         const remotePath = `/web/img/big/${Date.now()}_${randomString}.${fileExtension}`;
 
-        console.log('FTP 업로드 경로:', remotePath);
-
-        // FTP 업로드
         try {
             await uploadToFTP(imageFile.buffer, remotePath);
-            console.log('FTP 업로드 성공');
         } catch (ftpErr) {
-            console.error('FTP 업로드 오류:', ftpErr);
-            return res.status(500).json({ success: false, message: 'FTP 업로드 오류' });
+            return res.status(500).json({ success: false, message: 'FTP 업로드 오류: ' + ftpErr });
         }
 
-        // MongoDB 업데이트
         const existingBigImage = await db.collection('big_images').findOne({});
         if (existingBigImage) {
-            console.log('기존 큰화면 이미지 업데이트');
             await db.collection('big_images').updateOne(
                 { _id: existingBigImage._id },
                 { $set: { imagePath: remotePath, products, updatedAt: new Date() } }
             );
         } else {
-            console.log('새로운 큰화면 이미지 추가');
             await db.collection('big_images').insertOne({
                 imagePath: remotePath,
                 products,
@@ -105,12 +93,11 @@ app.post('/save-big-image', upload.single('image'), async (req, res) => {
 
         res.json({ success: true, imagePath: remotePath });
     } catch (err) {
-        console.error('큰화면 이미지 저장 오류:', err);
-        res.status(500).json({ success: false, message: '큰화면 이미지 저장 오류' });
+        res.status(500).json({ success: false, message: '큰화면 이미지 저장 오류', error: err.message });
     }
 });
 
-// 큰 화면 이미지 및 관련 상품 정보 불러오기
+// 큰 화면 이미지 불러오기 API
 app.get('/get-big-image', async (req, res) => {
     try {
         const bigImage = await db.collection('big_images').findOne({}, { sort: { createdAt: -1 } });
@@ -121,12 +108,11 @@ app.get('/get-big-image', async (req, res) => {
             res.json({ success: false, message: '큰 화면 이미지가 존재하지 않습니다.' });
         }
     } catch (err) {
-        console.error('큰화면 이미지 불러오기 오류:', err);
-        res.status(500).json({ success: false, message: '큰화면 이미지 불러오기 오류' });
+        res.status(500).json({ success: false, message: '큰화면 이미지 불러오기 오류', error: err.message });
     }
 });
 
-// 상품 정보 저장
+// 상품 정보 저장 API
 app.post('/save-product', upload.single('image'), async (req, res) => {
     try {
         const products = JSON.parse(req.body.products);
@@ -145,7 +131,6 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
         try {
             await uploadToFTP(imageFile.buffer, remotePath);
         } catch (ftpErr) {
-            console.error('FTP 오류:', ftpErr);
             return res.status(500).json({ success: false, message: ftpErr });
         }
 
@@ -164,12 +149,11 @@ app.post('/save-product', upload.single('image'), async (req, res) => {
             res.json({ success: true, documentId: result.insertedId });
         }
     } catch (err) {
-        console.error('상품 저장 오류:', err);
-        res.status(500).json({ success: false, message: '상품 저장 오류' });
+        res.status(500).json({ success: false, message: '상품 저장 오류', error: err.message });
     }
 });
 
-// 저장된 상품 정보 가져오기
+// 저장된 상품 정보 가져오기 API
 app.get('/get-products', async (req, res) => {
     const { limit = 12, skip = 0 } = req.query;
     try {
@@ -181,12 +165,11 @@ app.get('/get-products', async (req, res) => {
             .toArray();
         res.json({ success: true, products });
     } catch (err) {
-        console.error('상품 불러오기 오류:', err);
-        res.status(500).json({ success: false, message: '상품 불러오기 오류' });
+        res.status(500).json({ success: false, message: '상품 불러오기 오류', error: err.message });
     }
 });
 
-// 상품 삭제
+// 상품 삭제 API
 app.delete('/delete-product/:id', async (req, res) => {
     const productId = req.params.id;
     try {
@@ -197,8 +180,7 @@ app.delete('/delete-product/:id', async (req, res) => {
             res.json({ success: false, message: '삭제 실패' });
         }
     } catch (err) {
-        console.error('상품 삭제 오류:', err);
-        res.status(500).json({ success: false, message: '상품 삭제 오류' });
+        res.status(500).json({ success: false, message: '상품 삭제 오류', error: err.message });
     }
 });
 
