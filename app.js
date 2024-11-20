@@ -119,6 +119,65 @@ app.get('/get-products', async (req, res) => {
     }
 });
 
+
+// 큰화면 이미지를 저장하기 위한 라우트 추가
+app.post('/save-big-image', upload.single('image'), async (req, res) => {
+    try {
+        const imageFile = req.file; // 업로드된 파일
+        if (!imageFile) {
+            return res.status(400).json({ success: false, message: '이미지 파일이 없습니다.' });
+        }
+
+        // 파일 이름 및 저장 경로 설정
+        const randomString = crypto.randomBytes(16).toString('hex');
+        const fileExtension = imageFile.originalname.split('.').pop();
+        const remotePath = `/web/img/big/${Date.now()}_${randomString}.${fileExtension}`;
+
+        // FTP 서버에 업로드
+        try {
+            await uploadToFTP(imageFile.buffer, remotePath);
+        } catch (ftpErr) {
+            console.error('FTP 업로드 오류:', ftpErr);
+            return res.status(500).json({ success: false, message: 'FTP 업로드 오류' });
+        }
+
+        // MongoDB에 저장 (기존 데이터 덮어쓰기)
+        const existingBigImage = await db.collection('big_images').findOne({});
+        if (existingBigImage) {
+            await db.collection('big_images').updateOne(
+                { _id: existingBigImage._id },
+                { $set: { imagePath: remotePath, updatedAt: new Date() } }
+            );
+        } else {
+            await db.collection('big_images').insertOne({
+                imagePath: remotePath,
+                createdAt: new Date(),
+            });
+        }
+
+        // 성공 응답 반환
+        res.json({ success: true, imagePath: remotePath });
+    } catch (err) {
+        console.error('큰화면 이미지 저장 오류:', err);
+        res.status(500).json({ success: false, message: '큰화면 이미지 저장 오류' });
+    }
+});
+
+// 큰화면 이미지를 가져오기 위한 라우트 추가
+app.get('/get-big-image', async (req, res) => {
+    try {
+        const bigImage = await db.collection('big_images').findOne({});
+        if (!bigImage) {
+            return res.status(404).json({ success: false, message: '큰화면 이미지가 없습니다.' });
+        }
+
+        res.json({ success: true, imagePath: bigImage.imagePath });
+    } catch (err) {
+        console.error('큰화면 이미지 가져오기 오류:', err);
+        res.status(500).json({ success: false, message: '큰화면 이미지 가져오기 오류' });
+    }
+});
+
 app.delete('/delete-product/:id', async (req, res) => {
     const productId = req.params.id;
     try {
