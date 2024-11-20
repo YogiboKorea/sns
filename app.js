@@ -119,22 +119,19 @@ app.get('/get-products', async (req, res) => {
     }
 });
 
+
+
 app.get('/get-big-image', async (req, res) => {
     try {
         const bigImage = await db.collection('big_images').findOne({}, { sort: { createdAt: -1 } });
 
         if (bigImage) {
-            res.json({
-                success: true,
-                imagePath: bigImage.imagePath,
-                products: bigImage.products || [],
-            });
+            res.json({ success: true, imagePath: bigImage.imagePath, products: bigImage.products });
         } else {
             res.json({ success: false, message: '큰 화면 이미지가 존재하지 않습니다.' });
         }
     } catch (err) {
-        console.error('큰화면 이미지 불러오기 오류:', err);
-        res.status(500).json({ success: false, message: '큰화면 이미지 불러오기 오류' });
+        res.status(500).json({ success: false, message: '큰화면 이미지 불러오기 오류', error: err.message });
     }
 });
 
@@ -142,7 +139,6 @@ app.post('/save-big-image', upload.single('image'), async (req, res) => {
     try {
         console.log('파일 업로드 요청 수신');
         const imageFile = req.file;
-        const products = JSON.parse(req.body.products || '[]'); // 상품 정보가 없으면 빈 배열로 처리
         if (!imageFile) {
             console.error('이미지 파일이 없습니다.');
             return res.status(400).json({ success: false, message: '이미지 파일이 없습니다.' });
@@ -169,13 +165,12 @@ app.post('/save-big-image', upload.single('image'), async (req, res) => {
             console.log('기존 큰화면 이미지 업데이트');
             await db.collection('big_images').updateOne(
                 { _id: existingBigImage._id },
-                { $set: { imagePath: remotePath, products, updatedAt: new Date() } }
+                { $set: { imagePath: remotePath, updatedAt: new Date() } }
             );
         } else {
             console.log('새로운 큰화면 이미지 추가');
             await db.collection('big_images').insertOne({
                 imagePath: remotePath,
-                products,
                 createdAt: new Date(),
             });
         }
