@@ -133,54 +133,48 @@ app.get('/get-big-image', async (req, res) => {
         res.status(500).json({ success: false, message: '큰화면 이미지 불러오기 오류' });
     }
 });
-
 app.post('/save-big-image', upload.single('image'), async (req, res) => {
     try {
-        console.log('파일 업로드 요청 수신');
+        const products = JSON.parse(req.body.products || '[]'); // 상품 정보가 없으면 빈 배열로 처리
         const imageFile = req.file;
+
         if (!imageFile) {
-            console.error('이미지 파일이 없습니다.');
             return res.status(400).json({ success: false, message: '이미지 파일이 없습니다.' });
         }
 
         const randomString = crypto.randomBytes(16).toString('hex');
         const fileExtension = imageFile.originalname.split('.').pop();
-        const remotePath = `/web/img/sns/big/${Date.now()}_${randomString}.${fileExtension}`;
-
-        console.log('FTP 업로드 경로:', remotePath);
+        const remotePath = `/web/img/big/${Date.now()}_${randomString}.${fileExtension}`;
 
         // FTP 업로드
         try {
             await uploadToFTP(imageFile.buffer, remotePath);
-            console.log('FTP 업로드 성공');
         } catch (ftpErr) {
-            console.error('FTP 업로드 오류:', ftpErr);
             return res.status(500).json({ success: false, message: 'FTP 업로드 오류' });
         }
 
         // MongoDB 업데이트
         const existingBigImage = await db.collection('big_images').findOne({});
         if (existingBigImage) {
-            console.log('기존 큰화면 이미지 업데이트');
+            // 기존 문서 업데이트
             await db.collection('big_images').updateOne(
                 { _id: existingBigImage._id },
-                { $set: { imagePath: remotePath, updatedAt: new Date() } }
+                { $set: { imagePath: remotePath, products, updatedAt: new Date() } }
             );
         } else {
-            console.log('새로운 큰화면 이미지 추가');
+            // 새 문서 추가
             await db.collection('big_images').insertOne({
                 imagePath: remotePath,
+                products,
                 createdAt: new Date(),
             });
         }
 
         res.json({ success: true, imagePath: remotePath });
     } catch (err) {
-        console.error('큰화면 이미지 저장 오류:', err);
         res.status(500).json({ success: false, message: '큰화면 이미지 저장 오류' });
     }
 });
-
 app.delete('/delete-product/:id', async (req, res) => {
     const productId = req.params.id;
     try {
