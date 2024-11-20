@@ -118,7 +118,21 @@ app.get('/get-products', async (req, res) => {
         res.status(500).json({ success: false, message: '상품 불러오기 오류' });
     }
 });
+app.get('/get-big-image', async (req, res) => {
+    try {
+        // MongoDB에서 가장 최근에 저장된 큰 화면 이미지 데이터를 찾음
+        const bigImage = await db.collection('big_images').findOne({}, { sort: { createdAt: -1 } });
 
+        if (bigImage) {
+            res.json({ success: true, imagePath: bigImage.imagePath });
+        } else {
+            res.json({ success: false, message: '큰 화면 이미지가 존재하지 않습니다.' });
+        }
+    } catch (err) {
+        console.error('큰화면 이미지 불러오기 오류:', err);
+        res.status(500).json({ success: false, message: '큰화면 이미지 불러오기 오류' });
+    }
+});
 
 app.post('/save-big-image', upload.single('image'), async (req, res) => {
     try {
