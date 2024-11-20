@@ -119,21 +119,25 @@ app.get('/get-products', async (req, res) => {
     }
 });
 
-
-
 app.get('/get-big-image', async (req, res) => {
     try {
         const bigImage = await db.collection('big_images').findOne({}, { sort: { createdAt: -1 } });
 
         if (bigImage) {
-            res.json({ success: true, imagePath: bigImage.imagePath, products: bigImage.products });
+            res.json({
+                success: true,
+                imagePath: bigImage.imagePath,
+                products: bigImage.products || [],
+            });
         } else {
             res.json({ success: false, message: '큰 화면 이미지가 존재하지 않습니다.' });
         }
     } catch (err) {
-        res.status(500).json({ success: false, message: '큰화면 이미지 불러오기 오류', error: err.message });
+        console.error('큰화면 이미지 불러오기 오류:', err);
+        res.status(500).json({ success: false, message: '큰화면 이미지 불러오기 오류' });
     }
 });
+
 app.post('/save-big-image', upload.single('image'), async (req, res) => {
     try {
         console.log('파일 업로드 요청 수신');
