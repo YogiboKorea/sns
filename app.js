@@ -73,7 +73,7 @@ app.post('/save-big-image', upload.single('image'), async (req, res) => {
 
         const randomString = crypto.randomBytes(16).toString('hex');
         const fileExtension = imageFile.originalname.split('.').pop();
-        const remotePath = `/web/img/big/${Date.now()}_${randomString}.${fileExtension}`;
+        const remotePath = `/web/img/sns/big/${Date.now()}_${randomString}.${fileExtension}`;
 
         console.log('FTP 업로드 경로:', remotePath);
 
