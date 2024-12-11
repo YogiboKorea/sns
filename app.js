@@ -200,8 +200,6 @@ app.delete('/delete-product/:id', async (req, res) => {
     }
 });
 
-
-//온라인 쇼룸 관련 FTP 기능 추가하기
 app.post('/upload-capture', async (req, res) => {
     try {
         const { image } = req.body;
@@ -222,7 +220,17 @@ app.post('/upload-capture', async (req, res) => {
         try {
             await uploadToFTP(fileBuffer, remotePath);
             console.log('캡처 이미지 FTP 업로드 성공:', remotePath);
-            res.json({ success: true, imagePath: remotePath });
+
+            // MongoDB에 저장
+            const captureData = {
+                imagePath: remotePath, // FTP URL 경로
+                createdAt: new Date(), // 저장 시간
+            };
+
+            const result = await db.collection('captures').insertOne(captureData);
+            console.log('MongoDB에 캡처 정보 저장 성공:', result.insertedId);
+
+            res.json({ success: true, imagePath: remotePath, documentId: result.insertedId });
         } catch (ftpErr) {
             console.error('FTP 업로드 오류:', ftpErr);
             res.status(500).json({ success: false, message: 'FTP 업로드 실패' });
@@ -233,7 +241,23 @@ app.post('/upload-capture', async (req, res) => {
     }
 });
 
+// 캡처 URL 조회 API
+app.get('/get-captures', async (req, res) => {
+    try {
+        const { limit = 10, skip = 0 } = req.query; // 페이징 처리
+        const captures = await db.collection('captures')
+            .find()
+            .sort({ createdAt: -1 }) // 최신 순 정렬
+            .skip(parseInt(skip))
+            .limit(parseInt(limit))
+            .toArray();
 
+        res.json({ success: true, captures });
+    } catch (err) {
+        console.error('캡처 조회 오류:', err);
+        res.status(500).json({ success: false, message: '캡처 조회 오류' });
+    }
+});
 
 
 app.listen(4000, () => {
