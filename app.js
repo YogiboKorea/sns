@@ -7,6 +7,10 @@ const ftp = require('ftp');
 const crypto = require('crypto');
 require('dotenv').config();
 
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+
 const app = express();
 app.use(bodyParser.json());
 app.use(cors({
