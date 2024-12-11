@@ -273,6 +273,25 @@ app.get('/get-latest-capture', async (req, res) => {
         res.status(500).json({ success: false, message: '최신 캡처 조회 오류' });
     }
 });
+//최신순서대로 이미지 가지고 오는 로직 추가
+app.get('/get-images', async (req, res) => {
+    try {
+        const { limit = 10, skip = 0 } = req.query; // 페이징 지원
+        const images = await db.collection('captures')
+            .find()
+            .sort({ createdAt: -1 }) // 최신순 정렬
+            .skip(parseInt(skip))
+            .limit(parseInt(limit))
+            .toArray();
+
+        res.json({ success: true, images });
+    } catch (err) {
+        console.error('이미지 데이터 불러오기 오류:', err);
+        res.status(500).json({ success: false, message: '이미지 데이터를 불러오는 중 오류가 발생했습니다.' });
+    }
+});
+
+
 
 
 app.listen(4000, () => {
