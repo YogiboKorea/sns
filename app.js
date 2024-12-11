@@ -260,6 +260,21 @@ app.get('/get-captures', async (req, res) => {
 });
 
 
+app.get('/get-latest-capture', async (req, res) => {
+    try {
+        const latestCapture = await db.collection('captures').findOne({}, { sort: { createdAt: -1 } });
+        if (latestCapture) {
+            res.json({ success: true, imagePath: latestCapture.imagePath });
+        } else {
+            res.json({ success: false, message: '캡처된 이미지가 없습니다.' });
+        }
+    } catch (err) {
+        console.error('최신 캡처 조회 오류:', err);
+        res.status(500).json({ success: false, message: '최신 캡처 조회 오류' });
+    }
+});
+
+
 app.listen(4000, () => {
     console.log('서버가 4000번 포트에서 실행 중...');
 });
