@@ -7,6 +7,8 @@ const ftp = require('ftp');
 const crypto = require('crypto');
 require('dotenv').config();
 
+const app = express();
+
 // 미들웨어 설정
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
