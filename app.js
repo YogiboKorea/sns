@@ -197,6 +197,42 @@ app.delete('/delete-product/:id', async (req, res) => {
     }
 });
 
+
+//온라인 쇼룸 관련 FTP 기능 추가하기
+app.post('/upload-capture', async (req, res) => {
+    try {
+        const { image } = req.body;
+
+        if (!image) {
+            return res.status(400).json({ success: false, message: '이미지가 제공되지 않았습니다.' });
+        }
+
+        // Base64 데이터를 버퍼로 변환
+        const base64Data = image.replace(/^data:image\/png;base64,/, "");
+        const fileBuffer = Buffer.from(base64Data, 'base64');
+
+        // 파일 이름과 경로 설정
+        const randomString = crypto.randomBytes(16).toString('hex');
+        const remotePath = `/web/img/captures/${Date.now()}_${randomString}.png`;
+
+        // FTP 업로드
+        try {
+            await uploadToFTP(fileBuffer, remotePath);
+            console.log('캡처 이미지 FTP 업로드 성공:', remotePath);
+            res.json({ success: true, imagePath: remotePath });
+        } catch (ftpErr) {
+            console.error('FTP 업로드 오류:', ftpErr);
+            res.status(500).json({ success: false, message: 'FTP 업로드 실패' });
+        }
+    } catch (err) {
+        console.error('캡처 업로드 처리 오류:', err);
+        res.status(500).json({ success: false, message: '캡처 업로드 처리 오류' });
+    }
+});
+
+
+
+
 app.listen(4000, () => {
     console.log('서버가 4000번 포트에서 실행 중...');
 });
