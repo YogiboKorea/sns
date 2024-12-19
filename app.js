@@ -341,6 +341,21 @@ app.post('/like-image', async (req, res) => {
 });
 
 //순위별 데이터 가져오기
+app.get('/get-top-images', async (req, res) => {
+    try {
+        // 좋아요 수 기준 내림차순, 같은 좋아요 수에서는 최신순
+        const topImages = await db.collection('captures')
+            .find()
+            .sort({ likes: -1, createdAt: -1 }) // 좋아요 내림차순, 생성일 내림차순
+            .limit(3) // 상위 3개만 가져오기
+            .toArray();
+
+        res.json({ success: true, images: topImages });
+    } catch (err) {
+        console.error('추천 이미지 불러오기 오류:', err);
+        res.status(500).json({ success: false, message: '추천 이미지 불러오기 오류' });
+    }
+});
 
 
 app.listen(4000, () => {
