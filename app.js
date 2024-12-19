@@ -292,6 +292,33 @@ app.get('/get-images', async (req, res) => {
 });
 
 
+//조아요 API 추가 기능
+
+app.post('/like-image', async (req, res) => {
+    try {
+        const { imageId } = req.body;
+
+        if (!imageId) {
+            return res.status(400).json({ success: false, message: '이미지 ID가 제공되지 않았습니다.' });
+        }
+
+        // MongoDB에서 해당 이미지의 likes 필드를 1 증가
+        const result = await db.collection('captures').updateOne(
+            { _id: new ObjectId(imageId) },
+            { $inc: { likes: 1 } }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ success: false, message: '이미지를 찾을 수 없습니다.' });
+        }
+
+        res.json({ success: true, message: '좋아요가 추가되었습니다.' });
+    } catch (err) {
+        console.error('좋아요 처리 오류:', err);
+        res.status(500).json({ success: false, message: '좋아요 처리 중 오류가 발생했습니다.' });
+    }
+});
+
 
 
 app.listen(4000, () => {
