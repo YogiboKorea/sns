@@ -199,27 +199,19 @@ app.delete('/delete-product/:id', async (req, res) => {
         res.status(500).json({ success: false, message: '상품 삭제 오류' });
     }
 });
+
+
 app.post('/upload-capture', async (req, res) => {
     try {
         const { image, memberId } = req.body;
 
         if (!image || !memberId || memberId === 'null') {
-            console.error('요청 데이터 누락: image 또는 memberId가 없습니다.');
             return res.status(400).json({ success: false, message: '회원만 이벤트에 참여할 수 있습니다.' });
         }
 
-        console.log('이미지 데이터 및 회원 ID 수신:', { memberId });
-
         // Base64 데이터를 버퍼로 변환
-        let base64Data;
-        try {
-            base64Data = image.replace(/^data:image\/png;base64,/, "");
-            const fileBuffer = Buffer.from(base64Data, 'base64');
-            console.log('이미지 데이터 변환 성공');
-        } catch (err) {
-            console.error('Base64 데이터 변환 오류:', err.message);
-            return res.status(500).json({ success: false, message: '이미지 데이터 변환 실패' });
-        }
+        const base64Data = image.replace(/^data:image\/png;base64,/, "");
+        const fileBuffer = Buffer.from(base64Data, 'base64');
 
         // 파일 이름과 경로 설정
         const randomString = crypto.randomBytes(16).toString('hex');
@@ -227,34 +219,29 @@ app.post('/upload-capture', async (req, res) => {
 
         // FTP 업로드
         try {
-            await uploadToFTP(Buffer.from(base64Data, 'base64'), remotePath);
-            console.log('FTP 업로드 성공:', remotePath);
-        } catch (ftpErr) {
-            console.error('FTP 업로드 오류:', ftpErr.message);
-            return res.status(500).json({ success: false, message: 'FTP 업로드 실패' });
-        }
+            await uploadToFTP(fileBuffer, remotePath);
+            console.log('캡처 이미지 FTP 업로드 성공:', remotePath);
 
-        // MongoDB에 저장
-        try {
+            // MongoDB에 저장
             const captureData = {
-                imagePath: remotePath,
-                createdAt: new Date(),
-                memberId: memberId,
-                likes: 0,
-                likedBy: [],
+                imagePath: remotePath, // FTP URL 경로
+                createdAt: new Date(), // 저장 시간
+                memberId: memberId, // 업로드한 회원 ID
+                likes: 0, // 좋아요 초기값
+                likedBy: [], // 좋아요 누른 회원 목록
             };
 
             const result = await db.collection('captures').insertOne(captureData);
-            console.log('MongoDB 저장 성공:', result.insertedId);
+            console.log('MongoDB에 캡처 정보 저장 성공:', result.insertedId);
 
-            return res.json({ success: true, imagePath: remotePath, documentId: result.insertedId });
-        } catch (dbErr) {
-            console.error('MongoDB 저장 오류:', dbErr.message);
-            return res.status(500).json({ success: false, message: '데이터베이스 저장 실패' });
+            res.json({ success: true, imagePath: remotePath, documentId: result.insertedId });
+        } catch (ftpErr) {
+            console.error('FTP 업로드 오류:', ftpErr);
+            res.status(500).json({ success: false, message: 'FTP 업로드 실패' });
         }
     } catch (err) {
-        console.error('캡처 업로드 처리 오류:', err.message);
-        res.status(500).json({ success: false, message: '서버 처리 중 오류 발생' });
+        console.error('캡처 업로드 처리 오류:', err);
+        res.status(500).json({ success: false, message: '캡처 업로드 처리 오류' });
     }
 });
 
