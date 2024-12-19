@@ -203,10 +203,13 @@ app.post('/upload-capture', async (req, res) => {
     try {
         const { image, memberId } = req.body;
 
-        if (!image || !memberId) {
-            console.error('요청 데이터 누락:', { image, memberId });
-            return res.status(400).json({ success: false, message: '요청 데이터 누락: image 또는 memberId가 없습니다.' });
+        if (!image) {
+            console.error('요청 데이터 누락: image');
+            return res.status(400).json({ success: false, message: '요청 데이터 누락: image가 없습니다.' });
         }
+
+        // 회원 아이디가 없는 경우 "null" 문자열로 설정
+        const memberIdentifier = memberId || "null";
 
         // Base64 데이터를 버퍼로 변환
         const base64Data = image.replace(/^data:image\/png;base64,/, "");
@@ -214,7 +217,7 @@ app.post('/upload-capture', async (req, res) => {
 
         // 파일 이름과 경로 설정
         const randomString = crypto.randomBytes(16).toString('hex');
-        const remotePath = `/web/img/captures/${Date.now()}_${randomString}.png`;
+        const remotePath = `/web/img/captures/${memberIdentifier}_${Date.now()}_${randomString}.png`;
 
         // FTP 업로드
         await uploadToFTP(fileBuffer, remotePath);
@@ -223,7 +226,7 @@ app.post('/upload-capture', async (req, res) => {
         const captureData = {
             imagePath: remotePath,
             createdAt: new Date(),
-            memberId,
+            memberId: memberIdentifier,
             likes: 0,
             likedBy: [],
         };
@@ -235,6 +238,9 @@ app.post('/upload-capture', async (req, res) => {
         res.status(500).json({ success: false, message: '캡처 업로드 처리 오류' });
     }
 });
+
+
+
 
 
 
