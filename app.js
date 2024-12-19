@@ -217,7 +217,15 @@ app.post('/upload-capture', async (req, res) => {
 
         // 파일 이름과 경로 설정
         const randomString = crypto.randomBytes(16).toString('hex');
-        const remotePath = `/web/img/captures/${memberIdentifier}_${Date.now()}_${randomString}.png`;
+        const remotePath = `/web/img/captures/${memberId || "null"}_${new Date().toLocaleString("ko-KR", {
+            timeZone: "Asia/Seoul",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+        }).replace(/[^0-9]/g, "")}.png`;
 
         // FTP 업로드
         await uploadToFTP(fileBuffer, remotePath);
