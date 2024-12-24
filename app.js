@@ -371,6 +371,40 @@ app.get('/get-top-images', async (req, res) => {
     }
 });
 
+//본인이 작성글 삭제 처리하기
+app.delete('/delete-my-post/:id', async (req, res) => {
+    const { id } = req.params; // 삭제할 글의 ID
+    const { memberId } = req.body; // 요청 보낸 회원 ID
+
+    if (!id || !memberId) {
+        return res.status(400).json({ success: false, message: '잘못된 요청입니다.' });
+    }
+
+    try {
+        // 글이 해당 회원이 작성한 글인지 확인
+        const post = await db.collection('captures').findOne({ _id: new ObjectId(id) });
+        if (!post) {
+            return res.status(404).json({ success: false, message: '글을 찾을 수 없습니다.' });
+        }
+
+        if (post.memberId !== memberId) {
+            return res.status(403).json({ success: false, message: '삭제 권한이 없습니다.' });
+        }
+
+        // 글 삭제
+        const result = await db.collection('captures').deleteOne({ _id: new ObjectId(id) });
+        if (result.deletedCount === 1) {
+            return res.json({ success: true, message: '글이 삭제되었습니다.' });
+        } else {
+            return res.status(500).json({ success: false, message: '글 삭제에 실패했습니다.' });
+        }
+    } catch (err) {
+        console.error('글 삭제 오류:', err);
+        res.status(500).json({ success: false, message: '서버 오류로 인해 글 삭제에 실패했습니다.' });
+    }
+});
+
+
 
 app.listen(4000, () => {
     console.log('서버가 4000번 포트에서 실행 중...');
