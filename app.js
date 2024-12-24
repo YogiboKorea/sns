@@ -370,24 +370,6 @@ app.get('/get-top-images', async (req, res) => {
         res.status(500).json({ success: false, message: '추천 이미지 불러오기 오류' });
     }
 });
-app.delete('/delete-my-post/:memberId', async (req, res) => {
-    const { memberId } = req.params;
-
-    try {
-        const result = await db.collection('captures').deleteMany({ memberId });
-
-        if (result.deletedCount > 0) {
-            res.json({ success: true, message: `${result.deletedCount}개의 문서가 삭제되었습니다.` });
-        } else {
-            res.status(404).json({ success: false, message: '삭제할 문서를 찾을 수 없습니다.' });
-        }
-    } catch (err) {
-        console.error('삭제 오류:', err);
-        res.status(500).json({ success: false, message: '서버 오류 발생' });
-    }
-});
-
-
 
 
 app.listen(4000, () => {
