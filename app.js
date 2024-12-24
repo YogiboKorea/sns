@@ -369,35 +369,21 @@ app.get('/get-top-images', async (req, res) => {
         console.error('추천 이미지 불러오기 오류:', err);
         res.status(500).json({ success: false, message: '추천 이미지 불러오기 오류' });
     }
-});app.delete('/delete-my-post/:id', async (req, res) => {
+});
+app.delete('/delete-my-post/:memberId', async (req, res) => {
+    const { memberId } = req.params;
+
     try {
-        const imageId = req.params.id;
-        const { memberId } = req.body;
+        const result = await db.collection('captures').deleteMany({ memberId });
 
-        if (!imageId || !memberId) {
-            return res.status(400).json({ success: false, message: '잘못된 요청입니다.' });
-        }
-
-        // 이미지가 존재하고 요청자의 `memberId`와 일치하는지 확인
-        const image = await db.collection('captures').findOne({ _id: new ObjectId(imageId) });
-        if (!image) {
-            return res.status(404).json({ success: false, message: '이미지를 찾을 수 없습니다.' });
-        }
-
-        if (image.memberId !== memberId) {
-            return res.status(403).json({ success: false, message: '삭제 권한이 없습니다.' });
-        }
-
-        // 이미지 삭제
-        const result = await db.collection('captures').deleteOne({ _id: new ObjectId(imageId) });
-        if (result.deletedCount === 1) {
-            res.json({ success: true, message: '이미지가 삭제되었습니다.' });
+        if (result.deletedCount > 0) {
+            res.json({ success: true, message: `${result.deletedCount}개의 문서가 삭제되었습니다.` });
         } else {
-            res.status(500).json({ success: false, message: '이미지 삭제 실패' });
+            res.status(404).json({ success: false, message: '삭제할 문서를 찾을 수 없습니다.' });
         }
     } catch (err) {
-        console.error('이미지 삭제 오류:', err);
-        res.status(500).json({ success: false, message: '이미지 삭제 중 오류가 발생했습니다.' });
+        console.error('삭제 오류:', err);
+        res.status(500).json({ success: false, message: '서버 오류 발생' });
     }
 });
 
