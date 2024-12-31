@@ -372,31 +372,6 @@ app.get('/get-top-images', async (req, res) => {
 });
 const ftpClient = require('ftp');
 
-// FTP 삭제 함수
-const deleteFromFTP = (filePath) => {
-    return new Promise((resolve, reject) => {
-        const client = new ftpClient();
-        client.on('ready', () => {
-            client.delete(filePath, (err) => {
-                client.end();
-                if (err) {
-                    reject(`FTP 삭제 실패: ${filePath}`);
-                } else {
-                    resolve(`FTP 삭제 성공: ${filePath}`);
-                }
-            });
-        });
-        client.on('error', (err) => {
-            reject(`FTP 연결 실패: ${err.message}`);
-        });
-        client.connect({
-            host: process.env.FTP_HOST,
-            user: process.env.FTP_USER,
-            password: process.env.FTP_PASSWORD,
-        });
-    });
-};
-
 // 이미지 삭제 API
 app.delete('/delete-images', async (req, res) => {
     const memberId = req.body.memberId; // 회원 ID를 요청에서 받음
