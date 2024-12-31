@@ -372,6 +372,54 @@ app.get('/get-top-images', async (req, res) => {
 });
 
 
+//삭제기능 추가
+
+app.delete('/delete-image/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { memberId } = req.body; // 요청 본문에서 memberId 가져오기
+
+        if (!memberId) {
+            return res.status(403).json({ success: false, message: '비회원은 삭제 권한이 없습니다.' });
+        }
+
+        // 삭제할 이미지 가져오기
+        const image = await db.collection('captures').findOne({ _id: new ObjectId(id) });
+
+        if (!image) {
+            return res.status(404).json({ success: false, message: '이미지를 찾을 수 없습니다.' });
+        }
+
+        // 마스터 계정인 경우 모든 이미지를 삭제 가능
+        if (memberId === 'yogibo') {
+            const result = await db.collection('captures').deleteOne({ _id: new ObjectId(id) });
+
+            if (result.deletedCount === 1) {
+                return res.json({ success: true, message: '이미지가 삭제되었습니다.' });
+            } else {
+                return res.status(500).json({ success: false, message: '이미지 삭제 실패' });
+            }
+        }
+
+        // 작성자인 경우에만 삭제 가능
+        if (image.memberId === memberId) {
+            const result = await db.collection('captures').deleteOne({ _id: new ObjectId(id) });
+
+            if (result.deletedCount === 1) {
+                return res.json({ success: true, message: '이미지가 삭제되었습니다.' });
+            } else {
+                return res.status(500).json({ success: false, message: '이미지 삭제 실패' });
+            }
+        } else {
+            return res.status(403).json({ success: false, message: '삭제 권한이 없습니다.' });
+        }
+    } catch (err) {
+        console.error('이미지 삭제 처리 오류:', err);
+        res.status(500).json({ success: false, message: '이미지 삭제 처리 중 오류가 발생했습니다.' });
+    }
+});
+
+
 app.listen(4000, () => {
     console.log('서버가 4000번 포트에서 실행 중...');
 });
