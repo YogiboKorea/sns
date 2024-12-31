@@ -370,42 +370,70 @@ app.get('/get-top-images', async (req, res) => {
         res.status(500).json({ success: false, message: '추천 이미지 불러오기 오류' });
     }
 });
+const ftpClient = require('ftp');
 
-app.delete('/delete-image/:id', async (req, res) => {
+// FTP 삭제 함수
+const deleteFromFTP = (filePath) => {
+    return new Promise((resolve, reject) => {
+        const client = new ftpClient();
+        client.on('ready', () => {
+            client.delete(filePath, (err) => {
+                client.end();
+                if (err) {
+                    reject(`FTP 삭제 실패: ${filePath}`);
+                } else {
+                    resolve(`FTP 삭제 성공: ${filePath}`);
+                }
+            });
+        });
+        client.on('error', (err) => {
+            reject(`FTP 연결 실패: ${err.message}`);
+        });
+        client.connect({
+            host: process.env.FTP_HOST,
+            user: process.env.FTP_USER,
+            password: process.env.FTP_PASSWORD,
+        });
+    });
+};
+
+// 이미지 삭제 API
+app.delete('/delete-images', async (req, res) => {
+    const memberId = req.body.memberId; // 회원 ID를 요청에서 받음
+
+    if (memberId !== 'yogibo') {
+        return res.status(403).json({ success: false, message: '권한이 없습니다.' });
+    }
+
     try {
-        const { id } = req.params;
-        const { memberId } = req.body;
+        // MongoDB에서 이미지 데이터 가져오기
+        const images = await db.collection('captures').find({ memberId }).toArray();
 
-        console.log('삭제 요청 ID:', id);
-        console.log('요청 회원 ID:', memberId);
-
-        if (!memberId) {
-            return res.status(403).json({ success: false, message: '비회원은 삭제 권한이 없습니다.' });
+        if (images.length === 0) {
+            return res.json({ success: true, message: '삭제할 이미지가 없습니다.' });
         }
 
-        // MongoDB에서 이미지 조회
-        const image = await db.collection('captures').findOne({ _id: new ObjectId(id) });
+        // MongoDB 및 FTP에서 이미지 삭제
+        for (const image of images) {
+            const filePath = image.imagePath;
 
-        if (!image) {
-            return res.status(404).json({ success: false, message: '이미지를 찾을 수 없습니다.' });
-        }
-
-        // 삭제 권한 확인
-        if (memberId === 'yogibo' || image.memberId === memberId) {
-            const result = await db.collection('captures').deleteOne({ _id: new ObjectId(id) });
-
-            if (result.deletedCount === 1) {
-                console.log('이미지 삭제 성공:', image.imagePath);
-                return res.json({ success: true, message: '이미지가 삭제되었습니다.' });
-            } else {
-                return res.status(500).json({ success: false, message: '이미지 삭제 실패' });
+            // FTP에서 이미지 삭제
+            try {
+                await deleteFromFTP(filePath);
+                console.log(`FTP 삭제 성공: ${filePath}`);
+            } catch (err) {
+                console.error(`FTP 삭제 실패: ${filePath}`, err);
             }
-        } else {
-            return res.status(403).json({ success: false, message: '삭제 권한이 없습니다.' });
+
+            // MongoDB에서 이미지 문서 삭제
+            await db.collection('captures').deleteOne({ _id: image._id });
+            console.log(`MongoDB 삭제 성공: ${image._id}`);
         }
+
+        res.json({ success: true, message: '모든 이미지가 성공적으로 삭제되었습니다.' });
     } catch (err) {
-        console.error('이미지 삭제 처리 오류:', err);
-        res.status(500).json({ success: false, message: '이미지 삭제 처리 중 오류가 발생했습니다.' });
+        console.error('이미지 삭제 중 오류:', err);
+        res.status(500).json({ success: false, message: '이미지 삭제 중 오류가 발생했습니다.' });
     }
 });
 
