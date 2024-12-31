@@ -373,7 +373,6 @@ app.get('/get-top-images', async (req, res) => {
 
 
 //삭제기능 추가
-
 app.delete('/delete-image/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -390,23 +389,13 @@ app.delete('/delete-image/:id', async (req, res) => {
             return res.status(404).json({ success: false, message: '이미지를 찾을 수 없습니다.' });
         }
 
-        // 마스터 계정인 경우 모든 이미지를 삭제 가능
-        if (memberId === 'yogibo') {
+        // 마스터 계정 또는 작성자인 경우에만 삭제 가능
+        if (memberId === 'yogibo' || image.memberId === memberId) {
             const result = await db.collection('captures').deleteOne({ _id: new ObjectId(id) });
 
             if (result.deletedCount === 1) {
-                return res.json({ success: true, message: '이미지가 삭제되었습니다.' });
-            } else {
-                return res.status(500).json({ success: false, message: '이미지 삭제 실패' });
-            }
-        }
-
-        // 작성자인 경우에만 삭제 가능
-        if (image.memberId === memberId) {
-            const result = await db.collection('captures').deleteOne({ _id: new ObjectId(id) });
-
-            if (result.deletedCount === 1) {
-                return res.json({ success: true, message: '이미지가 삭제되었습니다.' });
+                console.log('삭제된 이미지 경로:', image.imagePath);
+                return res.json({ success: true, message: '이미지가 삭제되었습니다.', imagePath: image.imagePath });
             } else {
                 return res.status(500).json({ success: false, message: '이미지 삭제 실패' });
             }
