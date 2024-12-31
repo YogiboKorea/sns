@@ -372,30 +372,23 @@ app.get('/get-top-images', async (req, res) => {
 });
 
 // 이미지 삭제 API
-app.delete('/delete-images', async (req, res) => {
-    const memberId = req.body.memberId; // 회원 ID를 요청에서 받음
+app.delete('/delete-image', async (req, res) => {
+    const { imagePath } = req.body;
 
-    if (memberId !== 'yogibo') {
-        return res.status(403).json({ success: false, message: '권한이 없습니다.' });
+    if (!imagePath) {
+        return res.status(400).json({ success: false, message: 'imagePath가 제공되지 않았습니다.' });
     }
 
     try {
-        // MongoDB에서 이미지 데이터 가져오기
-        const images = await db.collection('captures').find({ memberId }).toArray();
+        const deleteResult = await db.collection('captures').deleteOne({ imagePath });
 
-        if (images.length === 0) {
-            return res.json({ success: true, message: '삭제할 이미지가 없습니다.' });
+        if (deleteResult.deletedCount === 0) {
+            return res.status(404).json({ success: false, message: '이미지를 찾을 수 없습니다.' });
         }
 
-        // MongoDB에서 이미지 문서 삭제
-        const deleteResult = await db.collection('captures').deleteMany({ memberId });
-
-        res.json({
-            success: true,
-            message: `${deleteResult.deletedCount}개의 이미지가 성공적으로 삭제되었습니다.`,
-        });
+        res.json({ success: true, message: '이미지가 성공적으로 삭제되었습니다.' });
     } catch (err) {
-        console.error('이미지 삭제 중 오류:', err);
+        console.error('이미지 삭제 오류:', err);
         res.status(500).json({ success: false, message: '이미지 삭제 중 오류가 발생했습니다.' });
     }
 });
