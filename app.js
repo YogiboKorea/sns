@@ -370,7 +370,6 @@ app.get('/get-top-images', async (req, res) => {
         res.status(500).json({ success: false, message: '추천 이미지 불러오기 오류' });
     }
 });
-const ftpClient = require('ftp');
 
 // 이미지 삭제 API
 app.delete('/delete-images', async (req, res) => {
@@ -388,29 +387,19 @@ app.delete('/delete-images', async (req, res) => {
             return res.json({ success: true, message: '삭제할 이미지가 없습니다.' });
         }
 
-        // MongoDB 및 FTP에서 이미지 삭제
-        for (const image of images) {
-            const filePath = image.imagePath;
+        // MongoDB에서 이미지 문서 삭제
+        const deleteResult = await db.collection('captures').deleteMany({ memberId });
 
-            // FTP에서 이미지 삭제
-            try {
-                await deleteFromFTP(filePath);
-                console.log(`FTP 삭제 성공: ${filePath}`);
-            } catch (err) {
-                console.error(`FTP 삭제 실패: ${filePath}`, err);
-            }
-
-            // MongoDB에서 이미지 문서 삭제
-            await db.collection('captures').deleteOne({ _id: image._id });
-            console.log(`MongoDB 삭제 성공: ${image._id}`);
-        }
-
-        res.json({ success: true, message: '모든 이미지가 성공적으로 삭제되었습니다.' });
+        res.json({
+            success: true,
+            message: `${deleteResult.deletedCount}개의 이미지가 성공적으로 삭제되었습니다.`,
+        });
     } catch (err) {
         console.error('이미지 삭제 중 오류:', err);
         res.status(500).json({ success: false, message: '이미지 삭제 중 오류가 발생했습니다.' });
     }
 });
+
 
 
 app.listen(4000, () => {
