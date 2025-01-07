@@ -372,15 +372,19 @@ app.get('/get-top-images', async (req, res) => {
 });
 
 // 이미지 삭제 API
-// 이미지 삭제 API
 app.delete('/delete-image', async (req, res) => {
     const { imagePath, memberId } = req.body;
 
     try {
         const image = await db.collection('captures').findOne({ imagePath });
 
-        // 작성자만 삭제 가능
-        if (!image || image.memberId !== memberId) {
+        // 이미지가 존재하지 않을 경우
+        if (!image) {
+            return res.status(404).json({ success: false, message: '이미지를 찾을 수 없습니다.' });
+        }
+
+        // 삭제 권한 검사: 작성자 또는 마스터 아이디인지 확인
+        if (image.memberId !== memberId && memberId !== 'testid') {
             return res.status(403).json({ success: false, message: '삭제 권한이 없습니다.' });
         }
 
