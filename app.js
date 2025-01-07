@@ -378,12 +378,12 @@ app.delete('/delete-image', async (req, res) => {
     try {
         const image = await db.collection('captures').findOne({ imagePath });
 
-        // 이미지가 존재하지 않을 경우
+        // 이미지가 없을 경우 처리
         if (!image) {
             return res.status(404).json({ success: false, message: '이미지를 찾을 수 없습니다.' });
         }
 
-        // 삭제 권한 검사: 작성자 또는 마스터 아이디인지 확인
+        // 작성자 또는 마스터 아이디만 삭제 가능
         if (image.memberId !== memberId && memberId !== 'testid') {
             return res.status(403).json({ success: false, message: '삭제 권한이 없습니다.' });
         }
@@ -396,7 +396,6 @@ app.delete('/delete-image', async (req, res) => {
         res.status(500).json({ success: false, message: '이미지 삭제 중 오류가 발생했습니다.' });
     }
 });
-
 
 
 
