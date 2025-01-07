@@ -354,6 +354,30 @@ app.post('/like-image', async (req, res) => {
     }
 });
 
+
+// 좋아요 상태 확인 API
+app.get('/get-like-status', async (req, res) => {
+    try {
+        const { imageId, memberId } = req.query;
+
+        if (!imageId || !memberId) {
+            return res.status(400).json({ success: false, message: '잘못된 요청입니다.' });
+        }
+
+        const image = await db.collection('captures').findOne({ _id: new ObjectId(imageId) });
+
+        if (!image) {
+            return res.status(404).json({ success: false, message: '이미지를 찾을 수 없습니다.' });
+        }
+
+        const isLiked = image.likedBy.includes(memberId);
+        res.json({ success: true, liked: isLiked });
+    } catch (err) {
+        console.error('좋아요 상태 확인 오류:', err);
+        res.status(500).json({ success: false, message: '좋아요 상태 확인 중 오류가 발생했습니다.' });
+    }
+});
+
 //순위별 데이터 가져오기
 app.get('/get-top-images', async (req, res) => {
     try {
