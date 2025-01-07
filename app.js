@@ -384,7 +384,7 @@ app.delete('/delete-image', async (req, res) => {
         }
 
         // 작성자 또는 마스터 아이디만 삭제 가능
-        if (image.memberId !== memberId && memberId !== 'testid') {
+        if (image.memberId !== memberId && memberId !== 'yogibo') {
             return res.status(403).json({ success: false, message: '삭제 권한이 없습니다.' });
         }
 
