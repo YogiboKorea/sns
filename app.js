@@ -301,47 +301,56 @@ app.get('/get-images', async (req, res) => {
         res.status(500).json({ success: false, message: '이미지 데이터를 불러오는 중 오류가 발생했습니다.' });
     }
 });
+
 app.post('/like-image', async (req, res) => {
     try {
         const { imageId, memberId } = req.body;
 
         if (!imageId || !memberId) {
-            return res.status(400).json({ success: false, message: '잘못된 요청입니다. imageId와 memberId가 필요합니다.' });
+            return res.status(400).json({ success: false, message: '잘못된 요청입니다.' });
         }
 
-        // MongoDB에서 이미지 검색
+        // 이미지 데이터 가져오기
         const image = await db.collection('captures').findOne({ _id: new ObjectId(imageId) });
         if (!image) {
             return res.status(404).json({ success: false, message: '이미지를 찾을 수 없습니다.' });
         }
 
-        // 좋아요 상태 확인
+        // 이미 좋아요를 누른 회원인지 확인
         const isLiked = image.likedBy.includes(memberId);
 
         if (isLiked) {
-            // 좋아요 취소 처리
-            await db.collection('captures').updateOne(
+            // 좋아요 취소
+            const result = await db.collection('captures').updateOne(
                 { _id: new ObjectId(imageId) },
                 {
-                    $inc: { likes: -1 },
-                    $pull: { likedBy: memberId },
+                    $inc: { likes: -1 }, // 좋아요 수 감소
+                    $pull: { likedBy: memberId }, // likedBy 배열에서 사용자 제거
                 }
             );
-            return res.json({ success: true, message: '좋아요가 취소되었습니다.', liked: false });
+
+            if (result.modifiedCount === 1) {
+                return res.json({ success: true, message: '좋아요가 취소되었습니다.', liked: false });
+            }
         } else {
-            // 좋아요 추가 처리
-            await db.collection('captures').updateOne(
+            // 좋아요 추가
+            const result = await db.collection('captures').updateOne(
                 { _id: new ObjectId(imageId) },
                 {
-                    $inc: { likes: 1 },
-                    $push: { likedBy: memberId },
+                    $inc: { likes: 1 }, // 좋아요 수 증가
+                    $push: { likedBy: memberId }, // likedBy 배열에 사용자 추가
                 }
             );
-            return res.json({ success: true, message: '좋아요가 추가되었습니다.', liked: true });
+
+            if (result.modifiedCount === 1) {
+                return res.json({ success: true, message: '좋아요가 추가되었습니다!', liked: true });
+            }
         }
+
+        res.status(500).json({ success: false, message: '좋아요 처리 실패' });
     } catch (err) {
         console.error('좋아요 처리 오류:', err);
-        res.status(500).json({ success: false, message: '서버 오류 발생', error: err.message });
+        res.status(500).json({ success: false, message: '좋아요 처리 중 오류가 발생했습니다.' });
     }
 });
 
@@ -368,7 +377,6 @@ app.get('/get-like-status', async (req, res) => {
         res.status(500).json({ success: false, message: '좋아요 상태 확인 중 오류가 발생했습니다.' });
     }
 });
-
 //순위별 데이터 가져오기
 app.get('/get-top-images', async (req, res) => {
     try {
