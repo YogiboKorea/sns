@@ -199,6 +199,8 @@ app.delete('/delete-product/:id', async (req, res) => {
         res.status(500).json({ success: false, message: '상품 삭제 오류' });
     }
 });
+
+
 app.post('/upload-capture', async (req, res) => {
     try {
         const { image, memberId } = req.body;
@@ -247,6 +249,72 @@ app.post('/upload-capture', async (req, res) => {
     }
 });
 
+
+
+
+
+app.post('/upload-capture/kakao', async (req, res) => {
+    try {
+        const { image, memberId } = req.body;
+
+        if (!image) {
+            console.error('요청 데이터 누락: image');
+            return res.status(400).json({ success: false, message: '요청 데이터 누락: image가 없습니다.' });
+        }
+
+        // 회원 아이디가 없는 경우 "null" 문자열로 설정
+        const memberIdentifier = memberId || "null";
+
+        // Base64 데이터를 버퍼로 변환
+        const base64Data = image.replace(/^data:image\/png;base64,/, "");
+        const fileBuffer = Buffer.from(base64Data, 'base64');
+
+        // 파일 이름과 경로 설정
+        const randomString = crypto.randomBytes(16).toString('hex');
+        const remotePath = `/web/img/captures/kakao/${memberId || "null"}_${new Date().toLocaleString("ko-KR", {
+            timeZone: "Asia/Seoul",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+        }).replace(/[^0-9]/g, "")}.png`;
+
+        // FTP 업로드
+        await uploadToFTP(fileBuffer, remotePath);
+
+        // MongoDB에 저장
+        const captureData = {
+            imagePath: remotePath,
+            createdAt: new Date(),
+            memberId: memberIdentifier,
+            likes: 0,
+            likedBy: [],
+        };
+
+        const result = await db.collection('kakaoCapture').insertOne(captureData);
+        res.json({ success: true, imagePath: remotePath, documentId: result.insertedId });
+    } catch (err) {
+        console.error('캡처 업로드 처리 오류:', err);
+        res.status(500).json({ success: false, message: '캡처 업로드 처리 오류' });
+    }
+});
+
+
+app.get('/get-latest-capture/kakao', async (req, res) => {
+    try {
+        const latestCapture = await db.collection('kakaoCapture').findOne({}, { sort: { createdAt: -1 } });
+        if (latestCapture) {
+            res.json({ success: true, imagePath: latestCapture.imagePath });
+        } else {
+            res.json({ success: false, message: '캡처된 이미지가 없습니다.' });
+        }
+    } catch (err) {
+        console.error('최신 캡처 조회 오류:', err);
+        res.status(500).json({ success: false, message: '최신 캡처 조회 오류' });
+    }
+});
 
 
 
