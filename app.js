@@ -488,6 +488,65 @@ app.delete('/delete-image', async (req, res) => {
     }
 });
 
+//데이터 다운로드 코드 추가
+
+const ExcelJS = require('exceljs');
+const fs = require('fs');
+const path = require('path');
+
+app.get('/download-excel', async (req, res) => {
+    try {
+        // MongoDB에서 captures 데이터 가져오기
+        const captures = await db.collection('captures').find().toArray();
+
+        if (!captures.length) {
+            return res.status(404).json({ success: false, message: '다운로드할 데이터가 없습니다.' });
+        }
+
+        // 엑셀 워크북 생성
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Captures');
+
+        // 엑셀 헤더 설정
+        worksheet.columns = [
+            { header: 'ID', key: '_id', width: 30 },
+            { header: 'Image Path', key: 'imagePath', width: 50 },
+            { header: 'Member ID', key: 'memberId', width: 20 },
+            { header: 'Likes', key: 'likes', width: 10 },
+            { header: 'Created At', key: 'createdAt', width: 25 },
+        ];
+
+        // 데이터 삽입
+        captures.forEach(capture => {
+            worksheet.addRow({
+                _id: capture._id.toString(),
+                imagePath: capture.imagePath,
+                memberId: capture.memberId || 'N/A',
+                likes: capture.likes,
+                createdAt: capture.createdAt ? new Date(capture.createdAt).toLocaleString('ko-KR') : 'N/A',
+            });
+        });
+
+        // 엑셀 파일 생성
+        const filePath = path.join(__dirname, 'captures.xlsx');
+        await workbook.xlsx.writeFile(filePath);
+
+        // 클라이언트에 파일 제공
+        res.download(filePath, 'captures.xlsx', (err) => {
+            if (err) {
+                console.error('엑셀 파일 다운로드 오류:', err);
+                res.status(500).json({ success: false, message: '엑셀 파일 다운로드 오류' });
+            }
+
+            // 다운로드 후 서버에서 파일 삭제 (임시 파일 처리)
+            fs.unlinkSync(filePath);
+        });
+
+    } catch (err) {
+        console.error('엑셀 생성 오류:', err);
+        res.status(500).json({ success: false, message: '엑셀 파일 생성 오류' });
+    }
+});
 
 
 app.listen(4000, () => {
