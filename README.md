@@ -18,7 +18,7 @@ SNS 이미지와 상품 정보 연동: SNS에 등록된 이미지를 통해 해�
 클릭률 확인을 통한 매출관읜 연관성 확인을 위한 페이지 개발<br/>
  해당 페이지 기간별 클릭률및 엑셀형식의 파일 다운로드 기능추가<br/>
 
- <div style="font-size:12px;margin:0 auto; width:800px;">
+ <div style="font-size:12px!important;margin:0 auto; width:800px;">
  목적:
  상품 정보 통합: SNS에 등록된 이미지와 상품 정보를 연동하여, <br/>
  고객들이 해당 상품에 대한 상세 정보를 한 번에 확인할 수 있도록 함.<br/>
