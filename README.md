@@ -19,4 +19,3 @@ SNS 이미지와 상품 정보 연동: SNS에 등록된 이미지를 통해 해�
  해당 페이지 기간별 클릭률및 엑셀형식의 파일 다운로드 기능추가<br/>
 
 https://yogibo.kr/event/yogiyogi.html
-![Uploading image.png…]()
