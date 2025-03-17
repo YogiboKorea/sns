@@ -17,6 +17,9 @@ SNS 이미지와 상품 정보 연동: SNS에 등록된 이미지를 통해 해�
 구매하기 장바구니 클릭 데이터 수집 <br/>
 클릭률 확인을 통한 매출관읜 연관성 확인을 위한 페이지 개발<br/>
  해당 페이지 기간별 클릭률및 엑셀형식의 파일 다운로드 기능추가<br/>
-![Uploading image.png…]()
-
 https://yogibo.kr/event/yogiyogi.html
+
+
+
+![image](https://github.com/user-attachments/assets/1933f6df-e1e6-423d-87fa-81aa59e5a35a)
+![image](https://github.com/user-attachments/assets/e4d20721-fe43-4264-b2f1-7f584377f291)
